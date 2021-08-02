@@ -1,0 +1,9 @@
+#!/bin/bash
+for i in {1..360}
+do
+	scp marselan@mendieta.ccad.unc.edu.ar:dev/mapi/sim/$1/image$i image$i.srx
+done
+scp marselan@mendieta.ccad.unc.edu.ar:dev/mapi/sim/$1/slurm* .
+scp marselan@mendieta.ccad.unc.edu.ar:dev/mapi/sim/$1/parameters.xml .
+scp marselan@mendieta.ccad.unc.edu.ar:dev/mapi/sim/$1/*.geo .
+scp marselan@mendieta.ccad.unc.edu.ar:dev/mapi/sim/$1/submit_job2.sh .

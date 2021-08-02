@@ -1,0 +1,2 @@
+int projectionCount = 0;
+

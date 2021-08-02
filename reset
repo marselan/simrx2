@@ -1,0 +1,4 @@
+rm -f state*
+rm -f detector*
+rm -f image*
+
