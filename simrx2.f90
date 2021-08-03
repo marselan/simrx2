@@ -56,6 +56,43 @@ close(unit = fid)
 print *, 'State saved for proy:[', proyNum, '] currentPhotonCount:[', currentPhotonCount, '] seed1: [', seed1, '] seed2: [', seed2
 end
 
+subroutine checkDetectorHit(Detector)
+implicit none
+Common/DETECTORCOMMON/detectorWidth,detectorHeight,detectorDistance
+real*8            :: detectorWidth, detectorHeight, detectorDistance
+
+Common/IMAGECOMMON/imageWidth,imageHeight,bitResolution
+integer           :: imageWidth, imageHeight, bitResolution
+
+Common/TRACK/E,X,Y,Z,U,V,W,WGHT,KPAR,IBODY,MAT,ILB(5)
+real*8            :: E,X,Y,Z,U,V,W,WGHT
+integer*4         :: KPAR,IBODY,MAT,ILB
+
+real*8                      :: halfDetectorWidth
+real*8                      :: halfDetectorHeight
+integer                     :: xi , yj
+integer*4, Dimension(imageHeight, imageWidth) :: Detector
+
+halfDetectorWidth = detectorWidth / 2d0
+halfDetectorHeight = detectorHeight / 2d0
+
+xi = Nint((X+halfDetectorWidth)*(real(imageWidth)/detectorWidth))
+if (xi.EQ.0) then
+	xi = xi + 1
+end if
+if (xi.GT.imageWidth) then
+	xi = imageWidth
+end if
+	yj = Nint((Y+halfDetectorHeight)*(real(imageHeight)/detectorHeight)) + 1
+if (yj.EQ.0) then
+	yj = yj + 1
+end if
+if (yj.GT.imageHeight) then
+	yj = imageHeight
+end if
+Detector(yj,xi) = Detector(yj,xi) + 1
+end
+
 subroutine simulate(ProyNum, NProy)
 implicit none
 integer                       :: ProyNum, NProy
@@ -207,8 +244,8 @@ do NP = currentPhotonCount, PhotonCount
 		! haz paralelo
 
 		X = (rand(1d0)-0.5)*beamWidth
-	      	Y = (rand(1d0)-0.5)*beamHeight
-	      	Z = -beamDistance
+		Y = (rand(1d0)-0.5)*beamHeight
+		Z = -beamDistance
 		U = 0d0
 		V = 0d0
 		W = 1d0
@@ -217,71 +254,45 @@ do NP = currentPhotonCount, PhotonCount
 	ILB = (/ 1, 0, 0, 0, 0 /)
 	! IBODY and MAT are set by function LOCATE
 	call LOCATE
+	if (MAT.EQ.0) then
+		call STEP(DSMAX(0), DSEF, NCROSS)
+		if (MAT.EQ.0) then
+			CYCLE
+		endif
+		if (IBODY.EQ.1) then
+			call checkDetectorHit(Detector)
+			CYCLE
+		endif
+	endif
 	call CLEANS
 	call START
 	do
-		call LOCATE
-		if (MAT.EQ.0) then
-			DS = DSMAX(0) ! void region
-		else
-			call JUMP(DSMAX(MAT), DS)
-		endif
-
+		call JUMP(DSMAX(MAT), DS)
 		call STEP(DS, DSEF, NCROSS)
-		if (MAT.EQ.0) then
-			! process secondary particles, if any
-			call SECPAR(LEFT)
-			if (LEFT.GT.0) then
-				call START
-				CYCLE
-			else
-				EXIT
-			end if
-		end if
-		! NCROSS greater than 0 means the particle crossed an interface
-		if (NCROSS.GT.0) then
-			! IBODY equals 1 means that the particle hit the detector
-			if (IBODY.EQ.1) then
-                                xi= Nint((X+halfDetectorWidth)*(real(imageWidth)/detectorWidth))
-                                if (xi.EQ.0) then
-                                    xi = xi + 1
-                                end if
-                                if (xi.GT.imageWidth) then
-                                    xi = imageWidth
-                                end if
-      				yj= Nint((Y+halfDetectorHeight)*(real(imageHeight)/detectorHeight)) + 1
-                                if (yj.EQ.0) then
-                                    yj = yj + 1
-                                end if
-                                if (yj.GT.imageHeight) then
-                                    yj = imageHeight
-                                end if
-                                Detector(yj,xi) = Detector(yj,xi) + 1
-				! process secondary particles, if any
-	  			call SECPAR(LEFT)
-				if (LEFT.GT.0) then
+		! IBODY equals 1 means that the particle hit the detector
+		if (IBODY.EQ.1) then
+			call checkDetectorHit(Detector)
+		else
+			! NCROSS greater than 0 means the particle crossed an interface
+			if (NCROSS.GT.0) then
+				if (MAT.NE.0) then
 					call START
 					CYCLE
-				else
-					EXIT
-				end if
-      			else
-				call START
-				CYCLE
-			end if
-		end if
-		call KNOCK(DE, ICOL)
-		if (E.LT.EABS(KPAR,MAT)) then
-			! process seconday particles, if any		
-			call SECPAR(LEFT)
-			if (LEFT.GT.0) then
-				call START
-				CYCLE
+				endif
 			else
-				EXIT
-			end if
-		else
+				call KNOCK(DE, ICOL)
+				if (E.GE.EABS(KPAR,MAT)) then
+					CYCLE
+				endif
+			endif
+		endif
+		! process seconday particles, if any		
+		call SECPAR(LEFT)
+		if (LEFT.GT.0) then
+			call START
 			CYCLE
+		else
+			EXIT
 		end if
 	end do
 	! save state		

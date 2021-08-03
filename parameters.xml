@@ -2,7 +2,7 @@
 <simrx>
     <scanned-arc angle="360"/>
     <projections count="8" />
-    <state save-every="1e5" /><!-- photons -->
+    <state save-every="1e7" /><!-- photons -->
     <process shutdown-after="2-00:00" />
     <detector height="20" width="20" distance="39" />
     <image>
@@ -12,10 +12,10 @@
     <beam type="conic">
 	    <geometry half-angle="1.4e1" distance="20" /><!-- beam half angle in degrees -->	
 	    <!--geometry width="15" height="15" distance="20" /-->
-        <photons>1e7</photons><!-- number of photons -->
+        <photons>1e8</photons><!-- number of photons -->
         <energy>50000</energy><!-- [eV] -->
     </beam>
-    <geometry file="cubocil2.geo" />
+    <geometry file="cubocil.geo" />
     <materials>
 	<material name="silicon">
             <file>Si.pmf</file>
