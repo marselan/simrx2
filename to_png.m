@@ -4,7 +4,7 @@ for i = 1:8
     v = reshape(v, 501, 501);
     v = v';
     M = max(max(v));
-    v = (v/M) * 255; 
+    v = (v/M) * 255;
     w = uint8(v);
     imwrite(w, strcat('result/png/image', num2str(i), '.png'));
 endfor

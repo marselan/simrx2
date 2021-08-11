@@ -83,7 +83,7 @@ end if
 if (xi.GT.imageWidth) then
 	xi = imageWidth
 end if
-	yj = Nint((Y+halfDetectorHeight)*(real(imageHeight)/detectorHeight)) + 1
+yj = Nint((Y+halfDetectorHeight)*(real(imageHeight)/detectorHeight)) + 1
 if (yj.EQ.0) then
 	yj = yj + 1
 end if
@@ -222,7 +222,7 @@ print *, 'Simulating Projection: [', ProyNum, ']'
 currentPhotonCount = currentPhotonCount + 1
 
 do NP = currentPhotonCount, PhotonCount
-        Print *, 'tick', ProyNum, NP
+        ! Print *, 'tick', ProyNum, NP
 	E = EMAX
 	KPAR = 2
 	if (beamtype == CONIC_BEAM) then
@@ -295,15 +295,13 @@ do NP = currentPhotonCount, PhotonCount
 			EXIT
 		end if
 	end do
-	! save state		
-	if ( (mod(NP, iSaveStateEvery) == 0) .OR. continueExecution == 0) then
-		call saveState(ProyNum, NP, ISEED1, ISEED2, Detector, imageHeight, imageWidth) 
-		if (continueExecution == 0) then
-			return
-		end if
+	! exit when shutdown signal is received
+	if (continueExecution == 0) then
+		EXIT
 	end if
 end do
 
+call saveState(ProyNum, NP, ISEED1, ISEED2, Detector, imageHeight, imageWidth) 
 MaxCount = maxval(Detector)
 Open(IWR,File='maxvalue' // int2str(ProyNum),Form='unformatted',Access='DIRECT',RECL=4)
 Write(IWR, rec=1) MaxCount  
@@ -356,6 +354,7 @@ Read(IR) aux8 ! skip first value (current photon count)
 Read(IR) aux4 ! skip second value (ISEED1)
 Read(IR) aux4 ! skip third value (ISEED2)
 Read(IR) Detector
+Print *, 'DETECTOR [', proyNum, '] MAX VAL [', MAXVAL(Detector), ']'
 
 ! flip up to down
 Detector = Detector(imageHeight:1:-1, :)
