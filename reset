@@ -1,4 +1,6 @@
 rm -f state*
 rm -f detector*
 rm -f image*
+rm -f result/image*
+rm -f result/png/*.png
 

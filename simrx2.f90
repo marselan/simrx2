@@ -166,8 +166,7 @@ real*8                      :: halfDetectorHeight
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 integer*4, Dimension(imageHeight, imageWidth) :: Detector
 integer*4                       :: MaxCount
-double precision                :: DeltaAngle  
-integer                         :: xi , yj
+double precision                :: DeltaAngle
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 real*8, parameter :: Pi = 3.1415926535897932, DosPi = 2d0*Pi
 real*8, parameter :: Deg2Rad = Pi/180d0
