@@ -45,10 +45,10 @@ extern "C"
     extern struct beamcommon_t
     {
         double beamtype; // beam geometry type: conic = 0,  parallel = 1
-	double halfangle; // half angle of the conic beam (degrees)
-	double beamdistance; // distance (cm) of the beam spot from the origin for both conic and parallel types
-	double beamwidth; // for parallel geometry, width of the emisor (cm)
-	double beamheight; // for parallel geometry, height of the emisot (cm)
+        double halfangle; // half angle of the conic beam (degrees)
+        double beamdistance; // distance (cm) of the beam spot from the origin for both conic and parallel types
+        double beamwidth; // for parallel geometry, width of the emisor (cm)
+        double beamheight; // for parallel geometry, height of the emisot (cm)
         double npmax; // number of (primary) photons to be simulated
         double emax; // initial energy of primary photons
     } beamcommon_;
