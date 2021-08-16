@@ -10,6 +10,7 @@
 extern "C"
 {
     void simulate_(int *, int *, int*, int*);
+	void state2det_(int*, int*);
     int getmax_(int*);
     void det2img_(int*, int*);
     void printparams_();
@@ -83,26 +84,23 @@ int main(int argc, char* argv[])
 		std::cout<<"Process: ["<<workerId<<"] Proy: ["<<proyNum<<"]"<<std::endl;
 		simulate_(&projectionCount, &proyNum, &workerId, &photonCount);
 		MPI_Barrier(MPI_COMM_WORLD);
-	} 
 
+		if( workerId == 0 )
+		{	
+			state2det_(&workerCount, &proyNum);	
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
-	MPI_Barrier(MPI_COMM_WORLD);
-
-	if( workerId == 0 && processcommon_.continueexecution == 1 )
+	if (workerId == 0)
 	{
-		//maxValue = getmax_(&projectionCount);
-		//std::cout<<"Global MaxValue: ["<<maxValue<<"]"<<std::endl;
+		maxValue = getmax_(&projectionCount);
+		det2img_(&maxValue, &projectionCount);
 
-		//for(int proyNum=1; proyNum <= projectionCount; proyNum++)
-		//{
-		//	det2img_(&maxValue, &proyNum);
-		//}
-	
 		time(&endTime);
 		std::cout<<"Total execution time: ["<<difftime(endTime, startTime)<<"] seconds."<<std::endl; 
 	}
 
 	MPI_Finalize();
 	return 0;
-
 }

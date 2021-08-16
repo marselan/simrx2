@@ -29,8 +29,8 @@ subroutine readState(workerId, currentPhotonCount, seed1, seed2, detector, heigh
 	inquire(file=stateName, exist=fileExists)
 	if( .NOT. fileExists ) then
 		currentPhotonCount = 0
-		seed1 = 8111117
-		seed2 = 9111117
+		seed1 = 8111117 + workerId
+		seed2 = 9111117 + workerId
 		detector = 0
 		open(fid,File=stateName, Form='unformatted', Access='SEQUENTIAL')
 		write(fid) currentPhotonCount
@@ -301,155 +301,186 @@ subroutine simulate(NProy, ProyNum, workerId, photonCount)
 		end if
 	end do
 
+	if (continueExecution == 1) then
+		NP = NP - 1
+	end if
+
 	call saveState(workerId, NP, ISEED1, ISEED2, Detector, imageHeight, imageWidth) 
 	print *, 'State saved for proy:[', proyNum, ']', ' workerId:[', workerId, '] currentPhotonCount:[', NP, ']'
-	MaxCount = maxval(Detector)
-	Open(IWR,File='maxvalue' // int2str(workerId),Form='unformatted',Access='DIRECT',RECL=4)
-	Write(IWR, rec=1) MaxCount  
-	Close(Unit = IWR)
-	print *, 'Writing MaxValue [', MaxCount, '] for workerId: [', workerId, ']'
 
 	return       
 end
 
 integer function getmax(Nproy)
-implicit none
-integer                         :: NProy, workerId
-integer*4                       :: IR
-integer*4                       :: maxValue, value
-character*20                    :: int2str
+	implicit none
+	integer                         :: Nproy, proyNum
+	integer*4                       :: IR
+	integer*4                       :: maxValue, value
+	character*20                    :: int2str
 
-maxValue = 0
-IR = 10
-do workerId = 1, Nproy
-	Open(IR,File='maxvalue' // int2str(workerId),Form='unformatted',Access='DIRECT',RECL=4)
-	Read(IR, rec=1) value
-	maxValue = max(maxValue, value)
-	Close(Unit = IR, STATUS = 'DELETE') 
-	print *, 'Read MaxValue [', value, '] for workerId: [', workerId, ']'
-end do
-getmax = maxValue
+	maxValue = 0
+	IR = 10
+	do proyNum = 1, Nproy
+		Open(IR,File='maxvalue' // int2str(proyNum), Form='unformatted', Access='DIRECT', RECL=4)
+		Read(IR, rec=1) value
+		maxValue = max(maxValue, value)
+		Close(Unit = IR, STATUS = 'DELETE') 
+	end do
+	print *, 'GLOBAL MAX VALUE: [', maxValue, ']'
+	getmax = maxValue
 end
 
-subroutine det2img(maxCount, proyNum)
-implicit none
-integer                         :: maxCount
-integer                         :: proyNum
+subroutine state2det(workerCount, proyNum)
+	implicit none
+	integer                         :: workerId, workerCount, proyNum
 
-Common/IMAGECOMMON/imageWidth,imageHeight,bitResolution
-integer           :: imageWidth, imageHeight, bitResolution
+	Common/IMAGECOMMON/imageWidth,imageHeight,bitResolution
+	integer           :: imageWidth, imageHeight, bitResolution
 
-integer*4                       :: IR, IW, ID
-integer*4                       :: aux4
-integer*8                       :: aux8
-character*20                    :: int2str
-integer*4, Dimension(imageHeight,imageWidth) :: Detector
-integer*2, Dimension(imageHeight,imageWidth) :: Image
-integer*2, Dimension(imageWidth,imageHeight) :: TImage
+	integer*4                       :: IS, ID, IM
+	integer*4                       :: aux4, MaxCount
+	integer*8                       :: aux8
+	character*20                    :: int2str
+	integer*4, Dimension(imageHeight,imageWidth) :: Detector, auxDetector
+	character*25 	  :: stateName
 
-IR = 10
-IW = 11
-ID = 12
-Open(IR,File='state' // int2str(proyNum),Form='unformatted',Access='SEQUENTIAL')
-Read(IR) aux8 ! skip first value (current photon count)
-Read(IR) aux4 ! skip second value (ISEED1)
-Read(IR) aux4 ! skip third value (ISEED2)
-Read(IR) Detector
-Print *, 'DETECTOR [', proyNum, '] MAX VAL [', MAXVAL(Detector), ']'
+	IS = 10
+	ID = 11
+	IM = 12
+	Detector = 0
 
-! flip up to down
-Detector = Detector(imageHeight:1:-1, :)
-! correct contrast
-Image = ( 1e0 - (maxCount - Detector) / real(maxCount) ) * (2**BitResolution - 1)
-! transpose and save image
-TImage = TRANSPOSE(Image)
-Open(IW,File='image' // int2str(ProyNum),Form='unformatted',Access='DIRECT',RECL=imageWidth*imageHeight * 2)
-Write(IW, rec=1) TImage  
+	! save detector
+	do workerId = 0, workerCount-1
+		call stateFileName(workerId, stateName)
+		Open(IS, File=stateName, Form='unformatted', Access='SEQUENTIAL')
+		Read(IS) aux8 ! skip first value (current photon count)
+		Read(IS) aux4 ! skip second value (ISEED1)
+		Read(IS) aux4 ! skip third value (ISEED2)
+		Read(IS) auxDetector
+		Detector = Detector + auxDetector
+		Close(Unit = IS, STATUS = 'DELETE')
+	end do
+	Open(ID,File='detector' // int2str(proyNum), Form='unformatted', Access='DIRECT', RECL=imageHeight*imageWidth*4)
+	Write(ID, rec=1) Detector  
+	Close(Unit = ID)
 
-Open(ID,File='detector' // int2str(ProyNum),Form='unformatted',Access='DIRECT',RECL=imageWidth*imageHeight * 4)
-Write(ID, rec=1) Detector  
+	! save maxvalue reached by the detector
+	MaxCount = maxval(Detector)
+	Open(IM,File='maxvalue' // int2str(proyNum), Form='unformatted', Access='DIRECT', RECL=4)
+	Write(IM, rec=1) MaxCount  
+	Close(Unit = IM)
+	print *, 'Writing MaxValue [', MaxCount, '] for proy: [', proyNum, ']'
+end
 
-Close(Unit = IR)
-Close(Unit = IW)
-Close(Unit = ID)
+subroutine det2img(maxCount, NProy)
+	implicit none
+	integer                         :: maxCount, NProy, proyNum
 
-return
+	Common/IMAGECOMMON/imageWidth,imageHeight,bitResolution
+	integer           :: imageWidth, imageHeight, bitResolution
+
+	integer*4                       :: ID, II
+	character*20                    :: int2str
+	integer*4, Dimension(imageHeight,imageWidth) :: Detector
+	integer*2, Dimension(imageHeight,imageWidth) :: Image
+	integer*2, Dimension(imageWidth,imageHeight) :: TImage
+
+	ID = 10
+	II = 11
+
+	do proyNum = 1, NProy
+		Open(ID, File='detector' // int2str(proyNum), Form='unformatted', Access='DIRECT', RECL=imageHeight*imageWidth*4)
+		Read(ID, rec=1) Detector
+		Close(Unit = ID, STATUS = 'DELETE')
+
+		! flip up to down
+		Detector = Detector(imageHeight:1:-1, :)
+		! correct contrast
+		Image = ( 1e0 - (maxCount - Detector) / real(maxCount) ) * (2**BitResolution - 1)
+		! transpose and save image
+		TImage = TRANSPOSE(Image)
+		Open(II, File='image' // int2str(proyNum), Form='unformatted', Access='DIRECT', RECL=imageHeight*imageWidth*2)
+		Write(II, rec=1) TImage  
+		Close(Unit = II)
+	end do
+
+	return
 end
 
 subroutine printParams()
-implicit none
+	implicit none
 
-integer              :: i
-integer*4, Parameter :: MAXMAT = 10
-integer*4, Parameter :: ELECTRON = 1
-integer*4, Parameter :: PHOTON   = 2
-integer*4, Parameter :: POSITRON = 3
+	integer              :: i
+	integer*4, Parameter :: MAXMAT = 10
+	integer*4, Parameter :: ELECTRON = 1
+	integer*4, Parameter :: PHOTON   = 2
+	integer*4, Parameter :: POSITRON = 3
 
-real*8, Parameter :: CONIC_BEAM = 0d0
-real*8, Parameter :: PARALLEL_BEAM = 1d0
+	real*8, Parameter :: CONIC_BEAM = 0d0
+	real*8, Parameter :: PARALLEL_BEAM = 1d0
 
-Common/STATECOMMON/saveStateEvery
-real*8           :: saveStateEvery
+	Common/STATECOMMON/saveStateEvery
+	real*8           :: saveStateEvery
 
-Common/SCANNEDARCCOMMON/scannedAngle
-Real*8            :: scannedAngle
+	Common/SCANNEDARCCOMMON/scannedAngle
+	Real*8            :: scannedAngle
 
-Common/DETECTORCOMMON/detectorWidth,detectorHeight,detectorDistance
-real*8            :: detectorWidth, detectorHeight, detectorDistance
+	Common/DETECTORCOMMON/detectorWidth,detectorHeight,detectorDistance
+	real*8            :: detectorWidth, detectorHeight, detectorDistance
 
-Common/IMAGECOMMON/imageWidth,imageHeight,bitResolution
-integer           :: imageWidth, imageHeight, bitResolution
+	Common/IMAGECOMMON/imageWidth,imageHeight,bitResolution
+	integer           :: imageWidth, imageHeight, bitResolution
 
-Common/BEAMCOMMON/beamType,halfAngle,beamDistance,beamWidth,beamHeight,npmax,emax
-real*8            :: beamType,halfAngle,beamDistance,beamWidth,beamHeight,npmax,emax
+	Common/BEAMCOMMON/beamType,halfAngle,beamDistance,beamWidth,beamHeight,npmax,emax
+	real*8            :: beamType,halfAngle,beamDistance,beamWidth,beamHeight,npmax,emax
 
-Common/GEOMETRYFILECOMMON/geometryFile
-character*20      :: geometryFile
+	Common/GEOMETRYFILECOMMON/geometryFile
+	character*20      :: geometryFile
 
-Common/MATERIALCOMMON/nmat,pmfile
-integer                             :: nmat
-character(len=100), dimension(10)   :: pmfile
-Common/CSIMPA/EABS(3,MAXMAT),C1(MAXMAT),C2(MAXMAT),WCC(MAXMAT),WCR(MAXMAT)
-Real*8            :: EABS,C1,C2,WCC,WCR
+	Common/MATERIALCOMMON/nmat,pmfile
+	integer                             :: nmat
+	character(len=100), dimension(10)   :: pmfile
+	Common/CSIMPA/EABS(3,MAXMAT),C1(MAXMAT),C2(MAXMAT),WCC(MAXMAT),WCR(MAXMAT)
+	Real*8            :: EABS,C1,C2,WCC,WCR
 
-Common/DSMAXCOMMON/dsmax
-Real*8            :: dsmax(0:MAXMAT)
+	Common/DSMAXCOMMON/dsmax
+	Real*8            :: dsmax(0:MAXMAT)
 
-Print *, 'Save state every: ', saveStateEvery, ' photons'
-Print *, 'Scanned arc: ', scannedAngle
-Print *, 'Detector width (cm): ', detectorWidth
-Print *, 'Detector height (cm): ', detectorHeight
-Print *, 'Detector distance from beam (cm): ', detectorDistance
-Print *, 'Image Width: ', imageWidth
-Print *, 'Image Height: ', imageHeight
-Print *, 'Bit Resolution: ', bitResolution
-if (beamType == CONIC_BEAM ) then
-Print *, 'Beam geometry: [CONIC] - Half angle: [', halfAngle, '] - DFO: [', beamDistance, ']'
-else
-Print *, 'Beam geometry: [PARALLEL] - Width: [', beamWidth, '] - Height: [', beamHeight, '] - DFO: [', beamDistance, ']'
-end if
-Print *, 'Number of photons (npmax): ', npmax
-Print *, 'Energy of (primary) photons (emax) :', emax
-Print *, 'Geometry file: [', geometryFile, ']'
-Print *, ''
-Print *, 'MATERIALS (total: ', nmat, ')'
-Print *, ''
+	Print *, 'Save state every: ', saveStateEvery, ' photons'
+	Print *, 'Scanned arc: ', scannedAngle
+	Print *, 'Detector width (cm): ', detectorWidth
+	Print *, 'Detector height (cm): ', detectorHeight
+	Print *, 'Detector distance from beam (cm): ', detectorDistance
+	Print *, 'Image Width: ', imageWidth
+	Print *, 'Image Height: ', imageHeight
+	Print *, 'Bit Resolution: ', bitResolution
+	if (beamType == CONIC_BEAM ) then
+	Print *, 'Beam geometry: [CONIC] - Half angle: [', halfAngle, '] - DFO: [', beamDistance, ']'
+	else
+	Print *, 'Beam geometry: [PARALLEL] - Width: [', beamWidth, '] - Height: [', beamHeight, '] - DFO: [', beamDistance, ']'
+	end if
+	Print *, 'Number of photons (npmax): ', npmax
+	Print *, 'Energy of (primary) photons (emax) :', emax
+	Print *, 'Geometry file: [', geometryFile, ']'
+	Print *, ''
+	Print *, 'MATERIALS (total: ', nmat, ')'
+	Print *, ''
 
 
 
-do i = 1, nmat
-	Print *, 'Material ', i
-	Print '(A2A100A1)', ' [', pmfile(i),']'
-	Print *, 'EABS Electrons: ', EABS(ELECTRON, i)
-	Print *, 'EABS Photons: ', EABS(PHOTON, i)
-	Print *, 'EABS Positrons: ', EABS(POSITRON, i)
-	Print *, 'C1: ', C1(i)
-	Print *, 'C2: ', C2(i)
-	Print *, 'WCC: ', WCC(i)
-	Print *, 'WCR: ', WCR(i)
-	Print *, 'dSmax: ', dsmax(i)
-	Print *, '' 
-end do
-return
+	do i = 1, nmat
+		Print *, 'Material ', i
+		Print '(A2A100A1)', ' [', pmfile(i),']'
+		Print *, 'EABS Electrons: ', EABS(ELECTRON, i)
+		Print *, 'EABS Photons: ', EABS(PHOTON, i)
+		Print *, 'EABS Positrons: ', EABS(POSITRON, i)
+		Print *, 'C1: ', C1(i)
+		Print *, 'C2: ', C2(i)
+		Print *, 'WCC: ', WCC(i)
+		Print *, 'WCR: ', WCR(i)
+		Print *, 'dSmax: ', dsmax(i)
+		Print *, '' 
+	end do
+	return
 end
 
