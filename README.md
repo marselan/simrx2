@@ -22,4 +22,5 @@ The values for the attenuation coefficient measured in the images vs theoretical
 
 ## Installation and configuration instructions
 
-Please refer to the wiki here.
+Please refer to the [wiki here.](https://github.com/marselan/simrx2/wiki)
+
