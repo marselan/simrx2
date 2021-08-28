@@ -5,11 +5,11 @@ CXX=mpiCC
 CXXFLAGS=-O3
 
 FC=mpiCC
-FCFLAGS=-O3
+FCFLAGS=-O3 -march=native
 
-TARGET=simrx
+TARGET=simrx2
 
-simrx: globalstructs.o PMPenelope2008.o PMPengeom2008.o tinystr.o tinyxml.o tinyxmlerror.o tinyxmlparser.o configparser.o simrx2.o mainmpi2.o 
+simrx: globalstructs.o Penelope.o Pengeom.o tinystr.o tinyxml.o tinyxmlerror.o tinyxmlparser.o configparser.o simrx2.o mainmpi2.o 
 	$(LINKER) -o $@ $^ $(LDFLAGS) 
 
 %.o: %.f90

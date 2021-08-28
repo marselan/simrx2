@@ -1,2 +1,2 @@
-mpiexec -np 8 ./simrx
+mpiexec -np 8 simrx2
 

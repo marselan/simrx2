@@ -1,3 +1,5 @@
+! Author: Mariano Arselan (C) 2016 -2021
+
 character*20 function int2str(k)
 	implicit none
 	integer :: k

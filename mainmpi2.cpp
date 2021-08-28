@@ -1,3 +1,7 @@
+/**
+ * Author: Mariano Arselan (C) 2016 - 2021
+*/
+
 #include <mpi.h>
 #include <iostream>
 #include <algorithm>
@@ -27,6 +31,12 @@ void timeoutCallback(int sig)
 int main(int argc, char* argv[])
 {
 
+	const char* defaultParametersFile = "parameters.xml";
+	char * parameterFile = nullptr;
+	(argc == 2) ? parameterFile = argv[1] : parameterFile = (char*) defaultParametersFile;
+
+	std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
+	
      printf("INICIO ****\n");
 	if( ! parseConfigFile("parameters.xml") )
 	{
