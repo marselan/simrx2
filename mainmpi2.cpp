@@ -34,10 +34,6 @@ int main(int argc, char* argv[])
 	const char* defaultParametersFile = "parameters.xml";
 	char * parameterFile = nullptr;
 	(argc == 2) ? parameterFile = argv[1] : parameterFile = (char*) defaultParametersFile;
-
-	printf("***** STARTING simrx2 *****\n");
-
-	std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
 	
 	if( ! parseConfigFile(parameterFile) )
 	{
@@ -55,6 +51,8 @@ int main(int argc, char* argv[])
 
 	if( workerId == 0 )
 	{
+		std::cout<<"***** STARTING simrx2 *****"<<std:endl;
+		std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
 		std::cout<<"Number of projections: ["<<projectionCount<<"]"<<std::endl;
 		std::cout<<"Number of processes: ["<<workerCount<<"]"<<std::endl;
 		std::cout<<"Shutdown simrx after: ["<<processcommon_.shutdownafter<<"] seconds"<<std::endl;
