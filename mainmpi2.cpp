@@ -1,3 +1,7 @@
+/**
+ * Author: Mariano Arselan (C) 2016 - 2021
+*/
+
 #include <mpi.h>
 #include <iostream>
 #include <algorithm>
@@ -9,7 +13,8 @@
 
 extern "C"
 {
-    void simulate_(int *, int *);
+    void simulate_(int *, int *, int*, int*);
+	void state2det_(int*, int*);
     int getmax_(int*);
     void det2img_(int*, int*);
     void printparams_();
@@ -17,34 +22,40 @@ extern "C"
 
 void timeoutCallback(int sig)
 {
-	int my_id;
-	MPI_Comm_rank(MPI_COMM_WORLD, &my_id);
+	int workerId;
+	MPI_Comm_rank(MPI_COMM_WORLD, &workerId);
 	processcommon_.continueexecution = 0;
-	printf("Process [%d]: Timer signal received. Shutting down process..\n", my_id);
+	printf("Process [%d]: Timer signal received. Shutting down process..\n", workerId);
 }
 
 int main(int argc, char* argv[])
 {
 
+	const char* defaultParametersFile = "parameters.xml";
+	char * parameterFile = nullptr;
+	(argc == 2) ? parameterFile = argv[1] : parameterFile = (char*) defaultParametersFile;
+
+	std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
+	
      printf("INICIO ****\n");
 	if( ! parseConfigFile("parameters.xml") )
 	{
 		std::cout<<"Error parsing parameters.xml file"<<std::endl;
 		return -1;
 	}	
-	int ierr, num_procs, my_id, maxValue;
+	int ierr, workerCount, workerId, maxValue;
 	time_t startTime, endTime;
 
 	ierr = MPI_Init(NULL, NULL);
-	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &my_id);
-	ierr = MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &workerId);
+	ierr = MPI_Comm_size(MPI_COMM_WORLD, &workerCount);
 
-	std::cout<<"MPI rank:["<<my_id<<"]"<<std::endl;
+	std::cout<<"MPI rank:["<<workerId<<"]"<<std::endl;
 
-	if( my_id == 0 )
+	if( workerId == 0 )
 	{
 		std::cout<<"Number of projections: ["<<projectionCount<<"]"<<std::endl;
-		std::cout<<"Number of processes: ["<<num_procs<<"]"<<std::endl;
+		std::cout<<"Number of processes: ["<<workerCount<<"]"<<std::endl;
 		std::cout<<"Shutdown simrx after: ["<<processcommon_.shutdownafter<<"] seconds"<<std::endl;
 		printparams_();
 		time(&startTime);
@@ -71,37 +82,35 @@ int main(int argc, char* argv[])
 	setitimer(ITIMER_REAL, &timerval, NULL);
 
 	// let's rock
-	
-	int procNum;
+
+	int npmax = (int)beamcommon_.npmax;
+	int photonCount = npmax / workerCount;
+	if (workerId == 0) {
+		photonCount = npmax - photonCount * (workerCount - 1);
+	}
 			
 	for(int proyNum=1; proyNum <= projectionCount && processcommon_.continueexecution == 1; proyNum++)
 	{
-		procNum = proyNum % num_procs;
-		if(procNum == my_id)
-		{
-			std::cout<<"Process: ["<<my_id<<"] Proy: ["<<proyNum<<"]"<<std::endl;
-			simulate_(&proyNum, &projectionCount);
-		}			
-	} 
+		std::cout<<"Process: ["<<workerId<<"] Proy: ["<<proyNum<<"]"<<std::endl;
+		simulate_(&projectionCount, &proyNum, &workerId, &photonCount);
+		MPI_Barrier(MPI_COMM_WORLD);
 
+		if( workerId == 0 )
+		{	
+			state2det_(&workerCount, &proyNum);	
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
-	MPI_Barrier(MPI_COMM_WORLD);
-
-	if( my_id == 0 && processcommon_.continueexecution == 1 )
+	if (workerId == 0)
 	{
 		maxValue = getmax_(&projectionCount);
-		std::cout<<"Global MaxValue: ["<<maxValue<<"]"<<std::endl;
+		det2img_(&maxValue, &projectionCount);
 
-		for(int proyNum=1; proyNum <= projectionCount; proyNum++)
-		{
-			det2img_(&maxValue, &proyNum);
-		}
-	
 		time(&endTime);
 		std::cout<<"Total execution time: ["<<difftime(endTime, startTime)<<"] seconds."<<std::endl; 
 	}
 
 	MPI_Finalize();
 	return 0;
-
 }
