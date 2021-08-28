@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=simrx
-#SBATCH --partition=capability
-#SBATCH --nodes=4
-#SBATCH --ntasks-per-node=18
+#SBATCH --partition=multi
+#SBATCH --ntasks=20
 #SBATCH --time 2-00:10
 . /etc/profile
-module load mpi/openmpi/1.8.3-gcc_4.8.3
-srun simrx
+module load gcc
+module load openmpi
+srun simrx > output
+
