@@ -12,9 +12,9 @@ mu = -log(bm/wm) / 6;
 tmu = 0.2269;
 abs_err = abs((mu -  tmu) / tmu) * 100;
 if (abs_err <= 5.0)
-    printf("OK - Water relative error is less than 5%%\n");
+    printf("\nOK - Water relative error is less than 5%%\n");
 else
-    printf("ERROR - Water relative error is greater than 5%%\n");
+    printf("\nERROR - Water relative error is greater than 5%%\n");
     exit;
 endif
 
