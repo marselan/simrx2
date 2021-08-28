@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 
 	std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
 	
-	if( ! parseConfigFile("parameters.xml") )
+	if( ! parseConfigFile(parameterFile) )
 	{
 		std::cout<<"Error parsing parameters file"<<std::endl;
 		return -1;
