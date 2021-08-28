@@ -1,6 +1,6 @@
 ## simrx2 in a nutshell
 
-**simrx** is an HPC (High Performance Computing) X-ray projection simulator based on **PENELOPE**, a particle simulator developed at the University of Barcelona. It was originally implemented in Fortran, and I extended it with a detector to capture images, i.e., image formation, and a C++ module using MPI in order to execute it in a cluster of CPUs.
+**simrx** is an HPC (High Performance Computing) X-ray projection simulator based on **PENELOPE**, a particle simulator developed at the University of Barcelona. It was originally implemented in Fortran, and I extended it with a detector to capture images, and a C++ module using MPI in order to execute it in a cluster of multicore CPUs.
 
 The first version was intended to produce only one projection, just one image. Now, it is able to produce multiple images at different angles so that they can be used later to feed them into an algorithm for volumetric reconstruction of the sample, also know as tomography or CT-scans.
 
