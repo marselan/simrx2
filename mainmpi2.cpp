@@ -35,12 +35,13 @@ int main(int argc, char* argv[])
 	char * parameterFile = nullptr;
 	(argc == 2) ? parameterFile = argv[1] : parameterFile = (char*) defaultParametersFile;
 
+	printf("***** STARTING simrx2 *****\n");
+
 	std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
 	
-     printf("INICIO ****\n");
 	if( ! parseConfigFile("parameters.xml") )
 	{
-		std::cout<<"Error parsing parameters.xml file"<<std::endl;
+		std::cout<<"Error parsing parameters file"<<std::endl;
 		return -1;
 	}	
 	int ierr, workerCount, workerId, maxValue;
