@@ -1,2 +1,3 @@
-mpiexec -np 8 simrx2
+#!/bin/bash
+mpiexec -np $1 simrx2
 

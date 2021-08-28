@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 
 	if( workerId == 0 )
 	{
-		std::cout<<"***** STARTING simrx2 *****"<<std:endl;
+		std::cout<<"***** STARTING simrx2 *****"<<std::endl;
 		std::cout<<"\nParameter file: "<<parameterFile<<std::endl;
 		std::cout<<"Number of projections: ["<<projectionCount<<"]"<<std::endl;
 		std::cout<<"Number of processes: ["<<workerCount<<"]"<<std::endl;

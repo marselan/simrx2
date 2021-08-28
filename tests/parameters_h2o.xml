@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<simrx>
+    <scanned-arc angle="360"/>
+    <projections count="1" />
+    <state save-every="1e5" /><!-- photons -->
+    <process shutdown-after="2-00:00" />
+    <detector height="20" width="20" distance="39" />
+    <image>
+        <spatial-resolution height="501" width="501" />
+        <intensity-resolution bit-depth="14"/>
+    </image>
+    <!--beam type="conic")-->
+    <beam type="parallel">
+	    <!-- geometry half-angle="1.4e1" distance="20" /><-beam half angle in degrees -->	
+	    <geometry width="15" height="15" distance="20" />
+        <photons>1e9</photons><!-- number of photons -->
+        <energy>50000</energy><!-- [eV] -->
+    </beam>
+    <geometry file="cube_h2o.geo" />
+    <materials>
+	<material name="silicon">
+            <file>Si.pmf</file>
+            <Eabs-electrons>3e4</Eabs-electrons> <!-- [eV] -->
+            <Eabs-photons>4e3</Eabs-photons> <!-- [eV] -->
+            <Eabs-positrons>3e4</Eabs-positrons> <!-- [eV] -->
+            <C1>0.05</C1>
+            <C2>0.05</C2>
+            <Wcc>1e4</Wcc> <!-- [eV] -->
+            <Wcr>1e3</Wcr> <!-- [eV] -->
+            <dSmax>1e30</dSmax> <!-- [cm] -->
+        </material>
+	<material name="water">
+            <file>Water.pmf</file>
+            <Eabs-electrons>3e4</Eabs-electrons> <!-- [eV] -->
+            <Eabs-photons>4e3</Eabs-photons> <!-- [eV] -->
+            <Eabs-positrons>3e4</Eabs-positrons> <!-- [eV] -->
+            <C1>0.05</C1>
+            <C2>0.05</C2>
+            <Wcc>1e4</Wcc> <!-- [eV] -->
+            <Wcr>1e3</Wcr> <!-- [eV] -->
+            <dSmax>1e30</dSmax> <!-- [cm] -->
+        </material>
+	</materials>
+</simrx>
