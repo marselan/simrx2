@@ -9,7 +9,7 @@ FCFLAGS=-O3 -march=native
 
 TARGET=simrx2
 
-simrx: globalstructs.o Penelope.o Pengeom.o tinystr.o tinyxml.o tinyxmlerror.o tinyxmlparser.o configparser.o simrx2.o mainmpi2.o 
+simrx2: globalstructs.o Penelope.o Pengeom.o tinystr.o tinyxml.o tinyxmlerror.o tinyxmlparser.o configparser.o simrx2.o mainmpi2.o 
 	$(LINKER) -o $@ $^ $(LDFLAGS) 
 
 %.o: %.f90
