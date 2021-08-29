@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 {
 
 	const char* defaultParametersFile = "parameters.xml";
-	char * parameterFile = nullptr;
+	char * parameterFile = NULL;
 	(argc == 2) ? parameterFile = argv[1] : parameterFile = (char*) defaultParametersFile;
 	
 	if( ! parseConfigFile(parameterFile) )

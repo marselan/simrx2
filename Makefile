@@ -2,7 +2,7 @@ LINKER=mpiCC
 LDFLAGS=-O3 -lgfortran
 
 CXX=mpiCC
-CXXFLAGS=-O3
+CXXFLAGS=-O3 -march=native
 
 FC=mpiCC
 FCFLAGS=-O3 -march=native
